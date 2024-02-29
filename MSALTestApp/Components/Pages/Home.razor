@@ -1,0 +1,64 @@
+﻿@page "/"
+@inject Microsoft.Identity.Client.IPublicClientApplication _pca
+@using System.Text.Json
+
+<h1>Hello, world!</h1>
+
+@_log
+
+
+@code {
+    private MarkupString _log;
+
+    private string[] _scopes = new[] {
+        "https://outlook.office.com/POP.AccessAsUser.All",
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        StringBuilder log = new StringBuilder();
+        AuthenticationResult authResult;
+        var accounts = await _pca!.GetAccountsAsync();
+        log.AppendLine($"Found {accounts.Count()} cached accounts");
+        bool needsInteractiveLogin = accounts.Count() < 1;
+        if (!needsInteractiveLogin)
+        {
+            try
+            {
+                authResult = await _pca!
+                    .AcquireTokenSilent(_scopes, accounts.FirstOrDefault())
+                    .ExecuteAsync();
+            }
+            catch (MsalUiRequiredException)
+            {
+                needsInteractiveLogin = true;
+            }
+            catch (Exception ex)
+            {
+                log.AppendLine($"MSAL silent error: {ex.Message}");
+            }
+        }
+
+        if (needsInteractiveLogin)
+        {
+            log.AppendLine("Doing interactive login");
+            try
+            {
+                authResult = await _pca!
+                    .AcquireTokenInteractive(_scopes)
+                    .ExecuteAsync();
+
+                log.AppendLine($"authResult = {(authResult == null ? "null" : $"Authenticated: {authResult.Account.HomeAccountId}")}");
+            }
+            catch (Exception ex)
+            {
+                log.AppendLine($"MSAL interactive error: {ex.Message}");
+            }
+        }
+        else
+            log.AppendLine("No interactive login required");
+
+        _log = new MarkupString(log.ToString().ReplaceLineEndings($"<br />{Environment.NewLine}"));
+        await base.OnInitializedAsync();
+    }
+}

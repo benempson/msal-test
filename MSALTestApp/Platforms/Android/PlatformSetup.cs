@@ -18,11 +18,11 @@ public partial class PlatformSetup : IPlatformSetup
     #endregion
 
     #region Setup
-    public void Setup()
+    public async Task Setup()
     {
         _logger.LogInformation("Enter Android Setup");
 
-        string? clientId = SecureStorage.GetAsync("ClientId").Result;
+        string? clientId = await SecureStorage.GetAsync("ClientId");
 
         IPublicClientApplication pca = PublicClientApplicationBuilder
             .Create(clientId)

@@ -2,5 +2,5 @@
 
 public interface IPlatformSetup
 {
-    void Setup();
+    Task Setup();
 }
